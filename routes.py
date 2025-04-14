@@ -25,11 +25,11 @@ def register_routes(app, db):
         if 'user' in session.keys():
             flash('Bereits angemeldet')
             return redirect(url_for('account'))
-        
+
         # Registrierungseite anzeigen
         if request.method == 'GET':
             return render_template('register.html')
-        
+  
         # Registrierung verarbeiten
         elif request.method == 'POST':
             # Prüfen, ob der Benutzername bereits existiert
@@ -102,8 +102,7 @@ def register_routes(app, db):
 
                 return redirect(url_for('account'))
 
-    
-    
+
     # --------------------------------------------------
     # Route: /verify
     # Zweck:
@@ -163,7 +162,7 @@ def register_routes(app, db):
                     </body>
                 </html>
                 '''))
-            
+
             return render_template('twofa_verify.html', action='twofa_verify')
 
         # POST-Anfrage: Code-Eingabe prüfen
@@ -383,7 +382,7 @@ def register_routes(app, db):
                 if not user:
                     flash('Benutzer nicht gefunden')  # Fehlernachricht, wenn die E-Mail nicht existiert
                     return redirect(url_for('reset_password'))
-                    
+
                 else:
                     # Benutzer existiert: Einen Code generieren und in der Sitzung speichern
                     session['username'] = user.username
@@ -466,7 +465,7 @@ def register_routes(app, db):
             if not user.email:
                 flash('Bitte zuerst E-Mail-Adresse angeben')  # Fehlermeldung anzeigen, wenn keine E-Mail vorhanden
                 return redirect(url_for('account'))  # Zurück zur Account-Seite, um die E-Mail zu setzen
-            
+
             # Aktivieren der Zwei-Faktor-Authentifizierung, wenn sie nicht aktiviert ist
             user.twofa = True
             db.session.commit()  # Änderungen in der Datenbank speichern
