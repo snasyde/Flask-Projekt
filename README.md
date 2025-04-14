@@ -13,7 +13,7 @@ Dieses Projekt ist eine einfache Flask-Anwendung, die als Ausgangspunkt für Web
    ```bash
    pip install -r requirements.txt
 
-3. Erstelle eine Konfigurationsdatei config.json im Hauptverzeichnis mit folgendem Aufbau:
+3. Erstelle eine Konfigurationsdatei `config.json` im Hauptverzeichnis mit folgendem Aufbau:
 ```json
 {
     "secret_key": "",
