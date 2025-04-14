@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Registieren{% endblock %}
+{% block description %}Registieren{% endblock %}
+{% block keywords %}Registieren{% endblock %}
+
+{% block content %}
+    <h1>Registieren</h1>
+    <form action="{{ url_for('register') }}" method="post">
+        <label for="username">Benutzername</label>
+        <br>
+        <input type="text" name="username" placeholder="Benutzername" required>
+        <br><br>
+        <label for="password">Passwort</label>
+        <br>
+        <input type="password" name="password" placeholder="Passwort" required>
+        <br><br>
+        <button type="submit">Registieren</button>
+    </form>
+    <br>
+    <a href="{{ url_for('account') }}">Du hast schon ein Konto?</a>
+{% endblock %}

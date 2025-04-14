@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Code bestätigen{% endblock %}
+{% block description %}Code bestätigen{% endblock %}
+{% block keywords %}Code bestätigen{% endblock %}
+
+{% block content %}
+    <h1>Code bestätigen</h1>
+    <form action="{{ url_for(action) }}" method="post">
+        <label for="code">Code</label>
+        <input type="number" name="code" placeholder="Code" required>
+        <br>
+        <button type="submit">Bestätigen</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Anton Schäfer">
+    <meta name="keywords" content="{% block keywords %} Flask, Projekt{% endblock %}">
+    <meta name="description" content="{% block description %} Einfaches FLask Projekt{% endblock %}">
+
+    <title>{% block title %}Anton's Flask Projekt{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{% block favicon %}https://snasyde.github.io/snasyde/images/pfp_without_bg.png{% endblock %}">
+</head>
+<body>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div id="content">
+        {% block content %}<h1>Leere Seite</h1>{% endblock %}
+    </div>
+</body>
+</html>

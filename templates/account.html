@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Account{% endblock %}
+{% block description %}Informationen über den Account{% endblock %}
+{% block keywords %}Account, Informationen{% endblock %}
+
+{% block content %}
+    <div id="information">
+        <h1>Informationen</h1>
+        <p><strong>Benutzername:</strong> {{ user.username }}</p>
+        <p><strong>E-Mail:</strong> {{ user.email }}</p>
+        <p><strong>2FA-Status:</strong> {{ user.twofa }}</p>
+    </div>
+
+    <div id="functions">
+        <h2>Funktionen</h2>
+        <ul>
+            <li><a href="{{ url_for('change_2fa') }}">2FA-Status ändern</a></li>
+            <li><a href="{{ url_for('log_out') }}">Ausloggen</a></li>
+            <li><a href="{{ url_for('play') }}">Spielen</a></li>
+        </ul>
+    </div>
+
+    <div id="change_name">
+        <h2>Benutzernamen ändern</h2>
+        <form action="{{ url_for('change_name') }}" method="POST">
+            <label for="new_name">Neuer Benutzername</label>
+            <input type="text" name="new_name" placeholder="Neuer Benutzername" required>
+            <button type="submit">Benutzernamen ändern</button>
+        </form>
+    </div>
+
+    <div id="change_password">
+        <h2>Passwort ändern</h2>
+        <form action="{{ url_for('change_password') }}" method="POST">
+            <label for="old_password">Altes Passwort</label>
+            <input type="password" name="old_password" placeholder="Altes Passwort" required>
+            
+            <label for="new_password">Neues Passwort</label>
+            <input type="password" name="new_password" placeholder="Neues Passwort" required>
+            
+            <button type="submit">Passwort ändern</button>
+        </form>
+    </div>
+
+    <div id="change_email">
+        <h2>E-Mail ändern</h2>
+        <form action="{{ url_for('change_email') }}" method="POST">
+            <label for="new_email">Neue E-Mail</label>
+            <input type="email" name="new_email" placeholder="Neue E-Mail" required>
+            <button type="submit">E-Mail ändern</button>
+        </form>
+    </div>
+
+    <div id="delete_account">
+        <h2>Account löschen</h2>
+        <form action="{{ url_for('delete_account') }}" method="POST">
+            <label for="password">Passwort</label>
+            <input type="password" name="password" placeholder="Passwort" required>
+            <button type="submit">Account löschen</button>
+        </form>
+    </div>
+{% endblock %}
