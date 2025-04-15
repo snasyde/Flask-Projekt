@@ -18,7 +18,7 @@ from models import Users
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'username' not in session:
+        if 'user_id' not in session:
             flash('Bitte melde dich zuerst an.')
             return redirect(url_for('account'))
         return f(*args, **kwargs)
@@ -34,7 +34,8 @@ def login_required(f):
 def twofa_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if Users.query.get(session['username']).twofa and not session.get('2fa_verified'):
+        user = Users.query.get(session['user_id'])
+        if user.email_2fa and not session.get('2fa_verified') or user.totp_2fa and not session.get('2fa_verified'):
             flash('Zwei-Faktor-Authentifizierung erforderlich.')
             return redirect(url_for('twofa_verify'))
         return f(*args, **kwargs)

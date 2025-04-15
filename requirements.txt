@@ -1,2 +1,5 @@
 flask
 flask-sqlalchemy
+pyotp
+qrcode[pil]
+cryptography

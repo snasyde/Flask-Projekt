@@ -1,5 +1,5 @@
 # Flask importieren
-from flask import render_template, session, redirect, url_for, request, flash
+from flask import render_template, session, flash, redirect, url_for, request, Response
 
 # Datenbank-Model importieren
 from models import Users
@@ -44,7 +44,7 @@ def register_routes(app, db):
                 db.session.commit()
 
                 # Benutzer in der Session speichern (automatisches Einloggen)
-                session['username'] = request.form['username']
+                session['user_id'] = user.id
                 flash('Benutzerkonto erfolgreich erstellt')
                 return redirect(url_for('account'))
 
@@ -63,17 +63,18 @@ def register_routes(app, db):
         # ----------------------------------------
         if request.method == 'GET':
             # Benutzer bereits angemeldet?
-            if 'username' in session:
-                user = Users.query.get(session['username'])
+            if 'user_id' in session:
+                user = Users.query.get(session['user_id'])
 
-                # 2FA bereits verifiziert oder nicht erforderlich
-                if session.get('2fa_verified') or not user.twofa:
-                    session['2fa_verified'] = False # 2FA-Status zurücksetzen
-                    return render_template('account.html', user=user)
-                else:
-                    # 2FA aktiv, aber noch nicht abgeschlossen
-                    flash('Bitte verifiziere deinen 2FA-Code.')
+                # 2FA aktiv, aber noch nicht abgeschlossen
+                if user.email_2fa and not session.get('2fa_verified') or user.totp_2fa and not session.get('2fa_verified'):
+                    flash('Zwei-Faktor-Authentifizierung erforderlich.')
                     return redirect(url_for('twofa_verify'))
+                else:
+                    # 2FA bereits verifiziert oder nicht erforderlich
+                    session['2fa_verified'] = False # 2FA-Status zurücksetzen
+                    qr_base64 = user.get_totp_qr()  # QR-Code für TOTP generieren
+                    return render_template('account.html', user=user, qr_base64=qr_base64)
             else:
                 # Noch nicht eingeloggt → Login-Seite anzeigen
                 return render_template('login.html')
@@ -83,7 +84,7 @@ def register_routes(app, db):
         # ----------------------------------------
         elif request.method == 'POST':
             # Prüfen, ob Login-Daten vorhanden sind
-            user = Users.query.get(request.form['username'])
+            user = Users.query.filter_by(username=request.form['username']).first()
 
             # Benutzername existiert nicht
             if not user:
@@ -91,13 +92,13 @@ def register_routes(app, db):
                 return redirect(url_for('account'))
 
              # Passwort stimmt nicht
-            elif user.password != request.form['password']:
+            elif not user.check_password(request.form['password']):
                 flash('Falsches Passwort.')
                 return redirect(url_for('account'))
 
             # Login erfolgreich
             else:
-                session['username'] = user.username
+                session['user_id'] = user.id
                 flash('Erfolgreich angemeldet.')
 
                 return redirect(url_for('account'))
@@ -106,74 +107,73 @@ def register_routes(app, db):
     # --------------------------------------------------
     # Route: /verify
     # Zweck:
-    #   - Verifiziert den 2FA-Code, der an die E-Mail des Nutzers gesendet wurde.
-    #   - Nur zugänglich, wenn der Benutzer eingeloggt ist (via @login_required).
+    #   - Verifiziert den per E-Mail gesendeten 2FA-Code.
+    #   - Nur für eingeloggte Benutzer zugänglich (@login_required).
     # --------------------------------------------------
     @app.route('/verify', methods=['GET', 'POST'])
     @login_required
     def twofa_verify():
-        # Benutzer aus der Datenbank holen
-        user = Users.query.filter_by(username=session['username']).first()
+        # Aktuellen Benutzer abrufen
+        user = Users.query.get(session['user_id'])
 
-        # Wenn der Benutzer keine 2FA aktiviert hat
-        if not user.twofa:
+        # Falls keine 2FA aktiviert ist
+        if not user.email_2fa and not user.totp_2fa:
             flash('Zwei-Faktor-Authentifizierung ist für dich nicht aktiviert.')
             return redirect(url_for('account'))
 
-        # Wenn 2FA bereits erfolgreich verifiziert wurde
+        # Falls 2FA bereits erfolgreich verifiziert wurde
         elif session.get('2fa_verified'):
             flash('Zwei-Faktor-Authentifizierung wurde bereits abgeschlossen.')
             return redirect(url_for('account'))
 
-        # GET-Anfrage: Code generieren und per E-Mail senden
+        # GET: Code generieren und per E-Mail senden
         if request.method == 'GET':
-            session['code'] = str(random.randint(1000, 9999))  # 4-stelligen Code erzeugen
-            code = session['code']
+            if user.email_2fa:
+                # Zufälligen 4-stelligen Code erstellen und speichern
+                session['code'] = str(random.randint(1000, 9999))
+                code = session['code']
 
-            # Senden der E-Mail mit dem Bestätigungscode
-            flash(send_email(email=user.email,
-                subject='Dein Zwei-Faktor-Code zur Bestätigung',
+                # E-Mail mit dem Verifizierungscode senden
+                flash(send_email(
+                    email=user.email,
+                    subject='Dein Zwei-Faktor-Code zur Bestätigung',
 
-                message_plain=f'''
-                Dein Bestätigungscode für die Zwei-Faktor-Authentifizierung lautet:
-                {code}
+                    message_plain=f'''
+                    Dein Bestätigungscode lautet:
+                    {code}
 
-                Bitte gib diesen Code auf der Website ein, um dich zu verifizieren.
+                    Bitte gib diesen Code auf der Website ein, um dich zu verifizieren.
 
-                Wenn du diesen Code nicht selbst angefordert hast, wurde die Verifizierung möglicherweise von jemand anderem ausgelöst.
-                In diesem Fall empfehlen wir dir, dein Passwort zu ändern.
+                    Wenn du den Code nicht angefordert hast, ändere dein Passwort und gib ihn nicht weiter.
+                    ''',
 
-                Achte darauf, den Code niemals an Dritte weiterzugeben, um dein Konto sicher zu halten.
-                ''',
+                    message_html=f'''
+                    <html>
+                        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                            <p>Dein <strong>Bestätigungscode</strong> lautet:</p>
+                            <p style="font-size: 18px; color: #0052cc;"><strong>{code}</strong></p>
 
+                            <p>Bitte gib diesen Code auf der Website ein, um dich zu verifizieren.</p>
 
-                message_html=f'''
-                <html>
-                    <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-                        <p>Dein <strong>Bestätigungscode</strong> für die Zwei-Faktor-Authentifizierung lautet:</p>
-                        <p style="font-size: 18px; color: #0052cc;"><strong>{code}</strong></p>
-
-                        <p>Bitte gib diesen Code auf der Website ein, um dich zu verifizieren.</p>
-
-                        <p>Wenn du diesen Code nicht selbst angefordert hast, wurde die Verifizierung möglicherweise von jemand anderem ausgelöst.</p>
-                        <p style="color: gray;">In diesem Fall empfehlen wir dir, dein Passwort zu ändern.</p>
-
-                        <p style="color: gray;">Achte darauf, den Code niemals an Dritte weiterzugeben, um dein Konto sicher zu halten.</p>
-                    </body>
-                </html>
-                '''))
+                            <p>Wenn du ihn nicht selbst angefordert hast, ändere dein Passwort.</p>
+                            <p style="color: gray;">Gib den Code niemals an Dritte weiter.</p>
+                        </body>
+                    </html>
+                    '''
+                ))
 
             return render_template('twofa_verify.html', action='twofa_verify')
 
-        # POST-Anfrage: Code-Eingabe prüfen
+        # POST: Eingegebenen Code prüfen
         elif request.method == 'POST':
-            if request.form['code'] == session['code']:
-                session.pop('code', None)                     # Code aus Session entfernen
-                session['2fa_verified'] = True          # 2FA-Status markieren
+            code = request.form['code']
+            if code == session.get('code') or user.verify_2fa(code) or user.verify_backup_code(code):
+                session.pop('code', None)           # Code entfernen
+                session['2fa_verified'] = True      # 2FA-Status setzen
                 flash('Zwei-Faktor-Authentifizierung erfolgreich verifiziert.')
                 return redirect(url_for('account'))
             else:
-                session.pop('code', None)                     # Bei falschem Code: löschen
+                session.pop('code', None)           # Falscher Code: löschen
                 flash('Falscher Code, bitte erneut versuchen.')
                 return redirect(url_for('twofa_verify'))
 
@@ -189,21 +189,18 @@ def register_routes(app, db):
     @twofa_required
     def change_name():
         # Überprüfen, ob der neue Benutzername bereits vergeben ist
-        if Users.query.get(request.form['new_name']):
+        if Users.query.filter_by(username=request.form['new_name']).first():
             flash('Benutzername bereits vergeben')  # Fehlernachricht, falls der Name schon existiert
             return redirect(url_for('account'))
 
         session['2fa_verified'] = False # 2FA-Status zurücksetzen
 
         # Benutzer-Objekt aus der Datenbank abrufen
-        user = Users.query.get(session['user'])
+        user = Users.query.filter_by(username=session['username']).first()
 
         # Benutzernamen ändern
         user.username = request.form['new_name']
         db.session.commit()  # Änderungen in der Datenbank speichern
-
-        # Benutzername in der Session aktualisieren
-        session['username'] = request.form['new_name']
 
         # Bestätigung der Änderung
         flash('Benutzername geändert')
@@ -220,11 +217,11 @@ def register_routes(app, db):
     @login_required
     @twofa_required
     def change_password():
-        # Benutzer aus der Datenbank anhand des aktuellen Session-Nutzernamens abrufen
+        # Benutzer anhand der in der Session gespeicherten Benutzer-ID abrufen
         user = Users.query.get(session['username'])
 
         # Überprüfen, ob das angegebene alte Passwort korrekt ist
-        if request.form['old_password'] != user.password:
+        if user.check_password(request.form['old_password']):
             flash('Falsches Passwort')  # Fehlermeldung, falls das alte Passwort falsch ist
             return redirect(url_for('account'))
 
@@ -236,7 +233,7 @@ def register_routes(app, db):
         # Falls alle Prüfungen bestanden wurden, Passwort aktualisieren
         else:
             session['2fa_verified'] = False # 2FA-Status zurücksetzen
-            user.password = request.form['new_password']  # Neues Passwort setzen
+            user.set_passwort(request.form['new_password'])  # Neues Passwort setzen
             db.session.commit()  # Änderungen in der Datenbank speichern
 
             flash('Passwort geändert')  # Erfolgsnachricht
@@ -333,11 +330,11 @@ def register_routes(app, db):
     @login_required
     @twofa_required
     def delete_account():
-        # Benutzer anhand des in der Session gespeicherten Benutzernamens aus der Datenbank abrufen
-        user = Users.query.get(session['username'])
+        # Benutzer anhand der in der Session gespeicherten Benutzer-ID abrufen
+        user = Users.query.get(session['user_id'])
 
         # Überprüfen, ob das eingegebene Passwort mit dem in der Datenbank gespeicherten Passwort übereinstimmt
-        if request.form["password"] == user.password:
+        if user.check_password(request.form['password']):
             # Benutzerkonto aus der Datenbank löschen
             db.session.delete(user)
             db.session.commit()  # Änderungen in der Datenbank speichern
@@ -371,7 +368,7 @@ def register_routes(app, db):
     def reset_password():
         if request.method == 'GET':
             # GET-Anfrage: Zeigt das Formular zum Zurücksetzen des Passworts an
-            return render_template('forgot_password.html')
+            return render_template('reset_password.html')
 
         elif request.method == 'POST':
             if 'email' in request.form.keys():
@@ -427,7 +424,7 @@ def register_routes(app, db):
                 # Wenn der Benutzer den Bestätigungscode eingibt
                 if request.form['code'] == session['code']:
                     # Wenn der Code korrekt ist, wird das Passwort geändert
-                    Users.query.get(session['username']).password = request.form['new_password']
+                    Users.query.get(session['user_id']).set_passwort(request.form['new_password'])
                     db.session.commit()
 
                     # Code aus der Sitzung entfernen und Benutzer auf die Konto-Seite umleiten
@@ -442,39 +439,72 @@ def register_routes(app, db):
 
 
     # --------------------------------------------------
-    # Route: /change_2fa
+    # Route: /change_2fa/<method>
     # Zweck:
-    #   - Ermöglicht es dem Benutzer, die Zwei-Faktor-Authentifizierung (2FA) zu aktivieren oder zu deaktivieren
-    #   - Benutzer muss eingeloggt und 2FA verifiziert sein
+    #   - Aktiviert oder deaktiviert die Zwei-Faktor-Authentifizierung (E-Mail oder TOTP)
+    #   - Nur für eingeloggte und 2FA-verifizierte Benutzer
     # --------------------------------------------------
-    @app.route('/change_2fa')
+    @app.route('/change_2fa/<method>')
     @login_required
     @twofa_required
-    def change_2fa():
-        # Benutzer aus der Datenbank anhand des in der Session gespeicherten Benutzernamens abrufen
-        user = Users.query.get(session['username'])
+    def change_2fa(method):
+        user = Users.query.get(session['user_id'])
 
-        # Überprüfen, ob der Benutzer bereits die Zwei-Faktor-Authentifizierung aktiviert hat
-        if user.twofa:
-            # Deaktivieren der 2FA, falls sie aktiviert ist
-            user.twofa = False
-            db.session.commit()  # Änderungen in der Datenbank speichern
-            flash('Zwei-Faktor-Authentifizierung deaktiviert')  # Erfolgsnachricht anzeigen
-        else:
-            # Falls der Benutzer keine E-Mail-Adresse angegeben hat, 2FA nicht aktivieren
+        # Gültige Methoden prüfen
+        if method not in ['email', 'totp']:
+            flash('Ungültige 2FA-Methode.')
+            return redirect(url_for('account'))
+
+        # 2FA aktivieren/deaktivieren je nach Methode
+        if method == 'email':
             if not user.email:
-                flash('Bitte zuerst E-Mail-Adresse angeben')  # Fehlermeldung anzeigen, wenn keine E-Mail vorhanden
-                return redirect(url_for('account'))  # Zurück zur Account-Seite, um die E-Mail zu setzen
+                flash('Bitte gib zuerst deine E-Mail-Adresse an, um die E-Mail-Zwei-Faktor-Authentifizierung zu aktivieren.')
+                return redirect(url_for('account'))
 
-            # Aktivieren der Zwei-Faktor-Authentifizierung, wenn sie nicht aktiviert ist
-            user.twofa = True
-            db.session.commit()  # Änderungen in der Datenbank speichern
-            flash('Zwei-Faktor-Authentifizierung aktiviert')  # Erfolgsnachricht anzeigen
+            user.email_2fa = not user.email_2fa
+            status = 'aktiviert' if user.email_2fa else 'deaktiviert'
+            flash(f'E-Mail-Zwei-Faktor-Authentifizierung {status}.')
 
-        session['2fa_verified'] = False # 2FA-Status zurücksetzen
+        elif method == 'totp':
+            user.totp_2fa = not user.totp_2fa
+            status = 'aktiviert' if user.totp_2fa else 'deaktiviert'
+            flash(f'TOTP-Zwei-Faktor-Authentifizierung {status}.')
 
-        # Nach der Änderung der 2FA-Einstellungen zurück zur Account-Seite weiterleiten
+        db.session.commit()
+
+        # 2FA-Status zurücksetzen, um erneute Verifizierung zu erzwingen
+        session['2fa_verified'] = False
+
         return redirect(url_for('account'))
+
+
+    # --------------------------------------------------
+    # Route: /download_backup_codes
+    # Zweck:
+    #   - Ermöglicht dem Benutzer das Herunterladen seiner 2FA-Backup-Codes
+    #   - Generiert neue einmalige Codes und gibt sie als .txt-Datei zurück
+    #   - Erfordert Login und aktivierte 2FA (durch Dekoratoren abgesichert)
+    # --------------------------------------------------
+    @app.route('/download_backup_codes')
+    @login_required
+    @twofa_required
+    def download_backup_codes():
+        # Hole den aktuell angemeldeten Benutzer anhand der Session-ID
+        user = Users.query.get(session['user_id'])
+
+        # Generiere neue Backup-Codes (werden verschlüsselt im User-Objekt gespeichert)
+        codes = user.generate_backup_codes()
+
+        # Erstelle den Textinhalt der Datei mit den Backup-Codes
+        content = "Deine Backup-Codes (bitte sicher aufbewahren):\n\n"
+        content += "\n".join([f"{i+1}. {code}" for i, code in enumerate(codes)])
+
+        # Gib die Datei als herunterladbare .txt-Datei zurück
+        return Response(
+            content,
+            mimetype='text/plain',
+            headers={'Content-Disposition': 'attachment; filename=backup_codes.txt'}
+        )
 
 
     # --------------------------------------------------

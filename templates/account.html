@@ -9,15 +9,18 @@
         <h1>Informationen</h1>
         <p><strong>Benutzername:</strong> {{ user.username }}</p>
         <p><strong>E-Mail:</strong> {{ user.email }}</p>
-        <p><strong>2FA-Status:</strong> {{ user.twofa }}</p>
+        <p><strong>E-Mail-2FA-Status:</strong> {{ user.email_2fa }}</p>
+        <p><strong>TOTP-2FA-Status:</strong> {{ user.totp_2fa }}</p>
     </div>
 
     <div id="functions">
         <h2>Funktionen</h2>
         <ul>
-            <li><a href="{{ url_for('change_2fa') }}">2FA-Status ändern</a></li>
+            <li><a href="{{ url_for('change_2fa', method='email') }}">E-Mail-2FA-Status ändern</a></li>
+            <li><a href="{{ url_for('change_2fa', method='totp') }}">TOTP-2FA-Status ändern</a></li>
             <li><a href="{{ url_for('log_out') }}">Ausloggen</a></li>
             <li><a href="{{ url_for('play') }}">Spielen</a></li>
+            <li><a href="{{ url_for('download_backup_codes') }}">Backup-Codes herunterladen</a></li>
         </ul>
     </div>
 
@@ -59,5 +62,10 @@
             <input type="password" name="password" placeholder="Passwort" required>
             <button type="submit">Account löschen</button>
         </form>
+    </div>
+    <div id="2fa_qr_code">
+        <h2>2FA QR Code</h2>
+        <!-- QR-Code als Base64-encoded Bild einfügen -->
+        <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code für 2FA">
     </div>
 {% endblock %}
