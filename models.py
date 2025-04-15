@@ -84,8 +84,7 @@ class Users(db.Model):
             fernet = Fernet(key)
 
             encrypted_codes = [fernet.encrypt(code.encode()).decode() for code in codes]
-            self.backup_codes = encrypted_codes
-            db.session.commit()  # Speichert die Backup-Codes in der DB
+            self.backup_codes = encrypted_codes  # Speichert die Backup-Codes in der DB
 
             return codes  # Gibt Klartextcodes zurück (z. B. für Download/Anzeige)
 
@@ -105,7 +104,6 @@ class Users(db.Model):
                 decrypted = fernet.decrypt(encrypted_code.encode()).decode()
                 if decrypted == code:
                     self.backup_codes.remove(encrypted_code)
-                    db.session.commit()
                     return True
             except Exception:
                 continue

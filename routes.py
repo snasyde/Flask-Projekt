@@ -168,6 +168,7 @@ def register_routes(app, db):
         elif request.method == 'POST':
             code = request.form['code']
             if code == session.get('code') or user.verify_2fa(code) or user.verify_backup_code(code):
+                db.session.commit()
                 session.pop('code', None)           # Code entfernen
                 session['2fa_verified'] = True      # 2FA-Status setzen
                 flash('Zwei-Faktor-Authentifizierung erfolgreich verifiziert.')
@@ -233,7 +234,7 @@ def register_routes(app, db):
         # Falls alle Prüfungen bestanden wurden, Passwort aktualisieren
         else:
             session['2fa_verified'] = False # 2FA-Status zurücksetzen
-            user.set_passwort(request.form['new_password'])  # Neues Passwort setzen
+            user.set_password(request.form['new_password'])  # Neues Passwort setzen
             db.session.commit()  # Änderungen in der Datenbank speichern
 
             flash('Passwort geändert')  # Erfolgsnachricht
@@ -494,6 +495,7 @@ def register_routes(app, db):
 
         # Generiere neue Backup-Codes (werden verschlüsselt im User-Objekt gespeichert)
         codes = user.generate_backup_codes()
+        db.session.commit()
 
         # Erstelle den Textinhalt der Datei mit den Backup-Codes
         content = "Deine Backup-Codes (bitte sicher aufbewahren):\n\n"
