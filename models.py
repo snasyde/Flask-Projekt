@@ -105,6 +105,7 @@ class Users(db.Model):
                 decrypted = fernet.decrypt(encrypted_code.encode()).decode()
                 if decrypted == code:
                     self.backup_codes.remove(encrypted_code)
+                    db.session.commit()
                     return True
             except Exception:
                 continue
