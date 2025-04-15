@@ -1,0 +1,12 @@
+{
+    "secret_key": "",
+
+    "host": "localhost",
+    "port": 5000,
+    "debug": true,
+
+    "email_server": "",
+    "email_port": 587,
+    "email_address": "",
+    "email_password": ""
+}
