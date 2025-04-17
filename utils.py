@@ -42,6 +42,22 @@ def twofa_required(f):
     return decorated_function
 
 # --------------------------------------------------
+# Decorator: admin_required
+# Zweck:
+#   - Stellt sicher, dass der Benutzer ein Admin ist
+#   - Wenn nicht, wird zur Haupt-Seite umgeleitet
+# --------------------------------------------------
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = Users.query.get(session['user_id'])
+        if user.role != 'admin':
+            flash('Zugriff verweigert. Nur Administratoren haben Zugriff auf diese Seite.')
+            return redirect(url_for('index.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --------------------------------------------------
 # E-Mail-Funktionalität
 # --------------------------------------------------
 

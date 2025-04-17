@@ -32,6 +32,7 @@ class Users(db.Model):
     totp = db.Column(db.String(500), unique=True)
     salt = db.Column(db.LargeBinary(16), nullable=False, unique=True)
     backup_codes = db.Column(JSON, nullable=True)
+    role = db.Column(db.String(50), default='user')
 
     def __init__(self, username: str, password: str):
         self.username = username
