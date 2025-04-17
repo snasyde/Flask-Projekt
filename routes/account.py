@@ -55,19 +55,19 @@ def index():
         # Benutzername existiert nicht
         if not user:
             flash('Benutzer nicht gefunden.')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
 
             # Passwort stimmt nicht
         elif not user.check_password(request.form['password']):
             flash('Falsches Passwort.')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
 
         # Login erfolgreich
         else:
             session['user_id'] = user.id
             flash('Erfolgreich angemeldet.')
 
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -82,7 +82,7 @@ def register():
     # Wenn bereits eingeloggt, Weiterleitung zur Kontoübersicht
     if 'user_id' in session:
         flash('Du bist bereits angemeldet.')
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # ----------------------------------------
     # GET: Registrierungsformular anzeigen
@@ -100,7 +100,7 @@ def register():
         # Prüfen, ob Benutzername bereits vergeben ist
         if Users.query.filter_by(username=username).first():
             flash('Benutzername bereits vergeben.')
-            return redirect(url_for('register'))
+            return redirect(url_for('account.register'))
 
         # Neuen Benutzer anlegen und speichern
         user = Users(username, password)
@@ -110,7 +110,7 @@ def register():
         # Automatisches Einloggen
         session['user_id'] = user.id
         flash('Benutzerkonto erfolgreich erstellt.')
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
 
 
@@ -129,12 +129,12 @@ def twofa_verify():
     # Falls keine 2FA aktiviert ist
     if not user.email_2fa and not user.totp_2fa:
         flash('Zwei-Faktor-Authentifizierung ist für dich nicht aktiviert.')
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # Falls 2FA bereits erfolgreich verifiziert wurde
     elif session.get('2fa_verified'):
         flash('Zwei-Faktor-Authentifizierung wurde bereits abgeschlossen.')
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # GET: Code generieren und per E-Mail senden
     if request.method == 'GET':
@@ -182,11 +182,11 @@ def twofa_verify():
             session.pop('code', None)           # Code entfernen
             session['2fa_verified'] = True      # 2FA-Status setzen
             flash('Zwei-Faktor-Authentifizierung erfolgreich verifiziert.')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
         else:
             session.pop('code', None)           # Falscher Code: löschen
             flash('Falscher Code, bitte erneut versuchen.')
-            return redirect(url_for('twofa_verify'))
+            return redirect(url_for('account.twofa_verify'))
 
 
 # --------------------------------------------------
@@ -202,7 +202,7 @@ def change_name():
     # Überprüfen, ob der neue Benutzername bereits vergeben ist
     if Users.query.filter_by(username=request.form['new_name']).first():
         flash('Benutzername bereits vergeben')  # Fehlernachricht, falls der Name schon existiert
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     session['2fa_verified'] = False # 2FA-Status zurücksetzen
 
@@ -215,7 +215,7 @@ def change_name():
 
     # Bestätigung der Änderung
     flash('Benutzername geändert')
-    return redirect(url_for('account'))
+    return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -234,12 +234,12 @@ def change_password():
     # Überprüfen, ob das angegebene alte Passwort korrekt ist
     if user.check_password(request.form['old_password']):
         flash('Falsches Passwort')  # Fehlermeldung, falls das alte Passwort falsch ist
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # Überprüfen, ob das neue Passwort gleich dem alten Passwort ist
     elif request.form['old_password'] == request.form['new_password']:
         flash('Neues Passwort darf nicht gleich dem alten Passwort sein')  # Fehlermeldung bei gleichbleibendem Passwort
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # Falls alle Prüfungen bestanden wurden, Passwort aktualisieren
     else:
@@ -248,7 +248,7 @@ def change_password():
         db.session.commit()  # Änderungen in der Datenbank speichern
 
         flash('Passwort geändert')  # Erfolgsnachricht
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -267,7 +267,7 @@ def change_email():
         # Prüfen, ob die E-Mail bereits registriert ist
         if Users.query.filter_by(email=request.form['new_email']).first():
             flash('E-Mail bereits vergeben')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
         else:
             # Temporär speichern und Bestätigungscode generieren
             session['new_email'] = request.form['new_email']
@@ -321,13 +321,13 @@ def change_email():
             session.pop('code', None)
 
             flash('E-Mail-Adresse erfolgreich geändert')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
         else:
             # Ungültiger Code
             session.pop('new_email', None)
             session.pop('code', None)
             flash('Falscher Code')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -357,14 +357,14 @@ def delete_account():
         flash('Account gelöscht')
 
         # Benutzer wird nach dem Löschen des Kontos zur Registrierungsseite weitergeleitet
-        return redirect(url_for('register'))
+        return redirect(url_for('account.register'))
 
     else:
         # Fehlermeldung, wenn das eingegebene Passwort nicht mit dem gespeicherten Passwort übereinstimmt
         flash('Falsches Passwort')
 
         # Benutzer wird zurück zur Account-Seite geleitet, um den Fehler zu korrigieren
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -389,7 +389,7 @@ def reset_password():
             # Prüfen, ob der Benutzer mit dieser E-Mail existiert
             if not user:
                 flash('Benutzer nicht gefunden')  # Fehlernachricht, wenn die E-Mail nicht existiert
-                return redirect(url_for('reset_password'))
+                return redirect(url_for('account.reset_password'))
 
             else:
                 # Benutzer existiert: Einen Code generieren und in der Sitzung speichern
@@ -441,12 +441,12 @@ def reset_password():
                 # Code aus der Sitzung entfernen und Benutzer auf die Konto-Seite umleiten
                 session.pop('code', None)
                 flash('Passwort geändert')  # Bestätigungsmeldung für erfolgreiche Passwortänderung
-                return redirect(url_for('account'))
+                return redirect(url_for('account.index'))
             else:
                 # Wenn der Code falsch ist, wird die Sitzung gelöscht und der Benutzer zurückgeschickt
                 session.clear()
                 flash('Falscher Code')  # Fehlermeldung für falschen Code
-                return redirect(url_for('reset_password'))
+                return redirect(url_for('account.reset_password'))
 
 
 # --------------------------------------------------
@@ -464,13 +464,13 @@ def change_2fa(method):
     # Gültige Methoden prüfen
     if method not in ['email', 'totp']:
         flash('Ungültige 2FA-Methode.')
-        return redirect(url_for('account'))
+        return redirect(url_for('account.index'))
 
     # 2FA aktivieren/deaktivieren je nach Methode
     if method == 'email':
         if not user.email:
             flash('Bitte gib zuerst deine E-Mail-Adresse an, um die E-Mail-Zwei-Faktor-Authentifizierung zu aktivieren.')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
 
         user.email_2fa = not user.email_2fa
         status = 'aktiviert' if user.email_2fa else 'deaktiviert'
@@ -486,7 +486,7 @@ def change_2fa(method):
     # 2FA-Status zurücksetzen, um erneute Verifizierung zu erzwingen
     session['2fa_verified'] = False
 
-    return redirect(url_for('account'))
+    return redirect(url_for('account.index'))
 
 
 # --------------------------------------------------
@@ -535,4 +535,4 @@ def log_out():
     flash('Erfolgreich abgemeldet')
 
     # Benutzer nach der Abmeldung zurück zur Account-Seite weiterleiten
-    return redirect(url_for('account'))
+    return redirect(url_for('account.index'))
