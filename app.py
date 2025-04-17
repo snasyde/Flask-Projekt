@@ -21,18 +21,24 @@ db = SQLAlchemy()
 # --------------------------------------------------
 def create_app():
     # Neue Flask-App instanziieren
-    app = Flask(__name__, static_url_path='/')
+    app = Flask(__name__)
 
     # Konfiguration setzen
     app.secret_key = config['secret_key']                             # Geheimschlüssel für Sessions
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'     # SQLite-Datenbankpfad
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.db'     # SQLite-Datenbankpfad
 
     # Datenbank mit der App verbinden
     db.init_app(app)
 
     # Routen importieren und registrieren
-    from routes import register_routes
-    register_routes(app, db)
+    from routes.index import blueprint
+    app.register_blueprint(blueprint)  # Haupt-Blueprint registrieren
+
+    from routes.account import blueprint
+    app.register_blueprint(blueprint)  # Account-Blueprint registrieren
+
+    from routes.play import blueprint
+    app.register_blueprint(blueprint)  # Play-Blueprint registrieren
 
     # App zurückgeben
     return app

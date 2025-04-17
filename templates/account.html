@@ -16,17 +16,17 @@
     <div id="functions">
         <h2>Funktionen</h2>
         <ul>
-            <li><a href="{{ url_for('change_2fa', method='email') }}">E-Mail-2FA-Status ändern</a></li>
-            <li><a href="{{ url_for('change_2fa', method='totp') }}">TOTP-2FA-Status ändern</a></li>
-            <li><a href="{{ url_for('log_out') }}">Ausloggen</a></li>
-            <li><a href="{{ url_for('play') }}">Spielen</a></li>
-            <li><a href="{{ url_for('download_backup_codes') }}">Backup-Codes herunterladen</a></li>
+            <li><a href="{{ url_for('account.change_2fa', method='email') }}">E-Mail-2FA-Status ändern</a></li>
+            <li><a href="{{ url_for('account.change_2fa', method='totp') }}">TOTP-2FA-Status ändern</a></li>
+            <li><a href="{{ url_for('account.log_out') }}">Ausloggen</a></li>
+            <li><a href="{{ url_for('play.index') }}">Spielen</a></li>
+            <li><a href="{{ url_for('account.download_backup_codes') }}">Backup-Codes herunterladen</a></li>
         </ul>
     </div>
 
     <div id="change_name">
         <h2>Benutzernamen ändern</h2>
-        <form action="{{ url_for('change_name') }}" method="POST">
+        <form action="{{ url_for('account.change_name') }}" method="POST">
             <label for="new_name">Neuer Benutzername</label>
             <input type="text" name="new_name" placeholder="Neuer Benutzername" required>
             <button type="submit">Benutzernamen ändern</button>
@@ -35,7 +35,7 @@
 
     <div id="change_password">
         <h2>Passwort ändern</h2>
-        <form action="{{ url_for('change_password') }}" method="POST">
+        <form action="{{ url_for('account.change_password') }}" method="POST">
             <label for="old_password">Altes Passwort</label>
             <input type="password" name="old_password" placeholder="Altes Passwort" required>
             
@@ -48,7 +48,7 @@
 
     <div id="change_email">
         <h2>E-Mail ändern</h2>
-        <form action="{{ url_for('change_email') }}" method="POST">
+        <form action="{{ url_for('account.change_email') }}" method="POST">
             <label for="new_email">Neue E-Mail</label>
             <input type="email" name="new_email" placeholder="Neue E-Mail" required>
             <button type="submit">E-Mail ändern</button>
@@ -57,7 +57,7 @@
 
     <div id="delete_account">
         <h2>Account löschen</h2>
-        <form action="{{ url_for('delete_account') }}" method="POST">
+        <form action="{{ url_for('account.delete_account') }}" method="POST">
             <label for="password">Passwort</label>
             <input type="password" name="password" placeholder="Passwort" required>
             <button type="submit">Account löschen</button>

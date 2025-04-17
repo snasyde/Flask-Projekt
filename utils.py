@@ -20,7 +20,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash('Bitte melde dich zuerst an.')
-            return redirect(url_for('account'))
+            return redirect(url_for('account.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -37,7 +37,7 @@ def twofa_required(f):
         user = Users.query.get(session['user_id'])
         if user.email_2fa and not session.get('2fa_verified') or user.totp_2fa and not session.get('2fa_verified'):
             flash('Zwei-Faktor-Authentifizierung erforderlich.')
-            return redirect(url_for('twofa_verify'))
+            return redirect(url_for('account.twofa_verify'))
         return f(*args, **kwargs)
     return decorated_function
 
