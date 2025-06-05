@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Registrieren{% endblock %}
+{% block description %}Registrieren{% endblock %}
+{% block keywords %}Registrieren{% endblock %}
+
+{% block content %}
+    <h1>Registrieren</h1>
+
+    {% macro render_input(name, type, placeholder) %}
+        <label for="{{ name }}">{{ placeholder }}</label><br>
+        <input type="{{ type }}" name="{{ name }}" placeholder="{{ placeholder }}" required><br><br>
+    {% endmacro %}
+
+    <form action="{{ url_for('account.register') }}" method="post">
+        {{ render_input('username', 'text', 'Benutzername') }}
+        {{ render_input('password', 'password', 'Passwort') }}
+        <button type="submit">Registrieren</button>
+    </form>
+
+    <br>
+    <a href="{{ url_for('account.index') }}">Du hast schon ein Konto?</a>
+{% endblock %}
