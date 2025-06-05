@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 from utils import login_required
 
-blueprint = Blueprint('play', __name__, url_prefix='/play')
+blueprint = Blueprint('play', __name__, url_prefix='/play', template_folder='../templates/play')
 
 @blueprint.route('/')
 @login_required

@@ -24,48 +24,47 @@
         </ul>
     </div>
 
+    {% macro render_form(action, fields, button_text) %}
+        <form action="{{ url_for(action) }}" method="POST">
+            {% for field in fields %}
+                <label for="{{ field.name }}">{{ field.label }}</label>
+                <input type="{{ field.type }}" name="{{ field.name }}" placeholder="{{ field.placeholder }}" required>
+            {% endfor %}
+            <button type="submit">{{ button_text }}</button>
+        </form>
+    {% endmacro %}
+
     <div id="change_name">
         <h2>Benutzernamen ändern</h2>
-        <form action="{{ url_for('account.change_name') }}" method="POST">
-            <label for="new_name">Neuer Benutzername</label>
-            <input type="text" name="new_name" placeholder="Neuer Benutzername" required>
-            <button type="submit">Benutzernamen ändern</button>
-        </form>
+        {{ render_form('account.change_name', 
+            [{'name': 'new_name', 'type': 'text', 'label': 'Neuer Benutzername', 'placeholder': 'Neuer Benutzername'}], 
+            'Benutzernamen ändern') }}
     </div>
 
     <div id="change_password">
         <h2>Passwort ändern</h2>
-        <form action="{{ url_for('account.change_password') }}" method="POST">
-            <label for="old_password">Altes Passwort</label>
-            <input type="password" name="old_password" placeholder="Altes Passwort" required>
-            
-            <label for="new_password">Neues Passwort</label>
-            <input type="password" name="new_password" placeholder="Neues Passwort" required>
-            
-            <button type="submit">Passwort ändern</button>
-        </form>
+        {{ render_form('account.change_password', 
+            [{'name': 'old_password', 'type': 'password', 'label': 'Altes Passwort', 'placeholder': 'Altes Passwort'},
+             {'name': 'new_password', 'type': 'password', 'label': 'Neues Passwort', 'placeholder': 'Neues Passwort'}], 
+            'Passwort ändern') }}
     </div>
 
     <div id="change_email">
         <h2>E-Mail ändern</h2>
-        <form action="{{ url_for('account.change_email') }}" method="POST">
-            <label for="new_email">Neue E-Mail</label>
-            <input type="email" name="new_email" placeholder="Neue E-Mail" required>
-            <button type="submit">E-Mail ändern</button>
-        </form>
+        {{ render_form('account.change_email', 
+            [{'name': 'new_email', 'type': 'email', 'label': 'Neue E-Mail', 'placeholder': 'Neue E-Mail'}], 
+            'E-Mail ändern') }}
     </div>
 
     <div id="delete_account">
         <h2>Account löschen</h2>
-        <form action="{{ url_for('account.delete_account') }}" method="POST">
-            <label for="password">Passwort</label>
-            <input type="password" name="password" placeholder="Passwort" required>
-            <button type="submit">Account löschen</button>
-        </form>
+        {{ render_form('account.delete_account', 
+            [{'name': 'password', 'type': 'password', 'label': 'Passwort', 'placeholder': 'Passwort'}], 
+            'Account löschen') }}
     </div>
+
     <div id="2fa_qr_code">
         <h2>2FA QR Code</h2>
-        <!-- QR-Code als Base64-encoded Bild einfügen -->
         <img src="data:image/png;base64,{{ qr_base64 }}" alt="QR Code für 2FA">
     </div>
 {% endblock %}

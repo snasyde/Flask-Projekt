@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 
-blueprint = Blueprint('index', __name__)
+blueprint = Blueprint('index', __name__, template_folder='../templates/index')
 
 # Route zur Startseite
 @blueprint.route('/')
