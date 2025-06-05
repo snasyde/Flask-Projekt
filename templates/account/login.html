@@ -6,17 +6,17 @@
 
 {% block content %}
     <h1>Anmelden</h1>
+    {% macro render_input(name, type, placeholder) %}
+        <label for="{{ name }}">{{ placeholder }}</label><br>
+        <input type="{{ type }}" name="{{ name }}" placeholder="{{ placeholder }}" required><br><br>
+    {% endmacro %}
+
     <form action="{{ url_for('account.index') }}" method="post">
-        <label for="username">Benutzername</label>
-        <br>
-        <input type="text" name="username" placeholder="Benutzername" required>
-        <br><br>
-        <label for="password">Passwort</label>
-        <br>
-        <input type="password" name="password" placeholder="Passwort" required>
-        <br><br>
+        {{ render_input('username', 'text', 'Benutzername') }}
+        {{ render_input('password', 'password', 'Passwort') }}
         <button type="submit">Anmelden</button>
     </form>
+
     <br>
     <a href="{{ url_for('account.reset_password') }}">Du hast dein Passwort vergessen?</a>
     <br><br>
