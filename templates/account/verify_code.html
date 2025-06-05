@@ -6,10 +6,14 @@
 
 {% block content %}
     <h1>Code bestätigen</h1>
+
+    {% macro render_input(name, type, placeholder) %}
+        <label for="{{ name }}">{{ placeholder }}</label><br>
+        <input type="{{ type }}" name="{{ name }}" placeholder="{{ placeholder }}" required><br><br>
+    {% endmacro %}
+
     <form action="{{ url_for(action) }}" method="post">
-        <label for="code">Code</label>
-        <input type="number" name="code" placeholder="Code" required>
-        <br>
+        {{ render_input('code', 'number', 'Code') }}
         <button type="submit">Bestätigen</button>
     </form>
 {% endblock %}

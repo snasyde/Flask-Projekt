@@ -12,7 +12,7 @@ from utils import login_required, twofa_required, send_email
 
 from app import db
 
-blueprint = Blueprint('account', __name__, url_prefix='/account')
+blueprint = Blueprint('account', __name__, url_prefix='/account', template_folder='../templates/account')
 
 
 # --------------------------------------------------
@@ -172,7 +172,7 @@ def twofa_verify():
                 '''
             ))
 
-        return render_template('twofa_verify.html', action='account.twofa_verify')
+        return render_template('verify_code.html', action='account.twofa_verify')
 
     # POST: Eingegebenen Code prüfen
     elif request.method == 'POST':
